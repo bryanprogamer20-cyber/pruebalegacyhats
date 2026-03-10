@@ -1,0 +1,202 @@
+{
+  "gorras": [
+    {
+      "nuevo": true,
+      "agotado": false,
+      "marca": "Anymore",
+      "modelo": "Bat Gervonta",
+      "precio": 1500,
+      "imagenes": [
+        "/imagenes/bat-gervonta-1-.jpeg"
+      ]
+    },
+    {
+      "nuevo": true,
+      "agotado": false,
+      "marca": "Anymore",
+      "modelo": "Bat Chrome",
+      "precio": 1500,
+      "imagenes": [
+        "/imagenes/bat-chrome-1-.jpeg"
+      ]
+    },
+    {
+      "nuevo": true,
+      "agotado": false,
+      "marca": "Anymore",
+      "modelo": "Bat Brown",
+      "precio": 1500,
+      "imagenes": [
+        "/imagenes/bat-brown-1-.jpeg"
+      ]
+    },
+    {
+      "nuevo": false,
+      "agotado": false,
+      "marca": "New Era",
+      "modelo": "Oakland Athletics World Series",
+      "precio": 1200,
+      "imagenes": [
+        "/imagenes/oakland-front.jpg",
+        "/imagenes/oakland-side.jpg"
+      ]
+    },
+    {
+      "nuevo": false,
+      "agotado": false,
+      "marca": "New Era",
+      "modelo": "White Sox Brown Snapback",
+      "precio": 1200,
+      "imagenes": [
+        "/imagenes/whitesox-brown-front.jpg",
+        "/imagenes/whitesox-brown-side.jpg"
+      ]
+    },
+    {
+      "nuevo": false,
+      "agotado": false,
+      "marca": "31 Hats",
+      "modelo": "31 Hats World Champions",
+      "precio": 1550,
+      "imagenes": [
+        "/imagenes/31-world-front.jpg",
+        "/imagenes/31-world-side1.jpg",
+        "/imagenes/31-world-side2.jpg"
+      ]
+    },
+    {
+      "nuevo": false,
+      "agotado": false,
+      "marca": "New Era",
+      "modelo": "Angels 25th White Black",
+      "precio": 1200,
+      "imagenes": [
+        "/imagenes/angels-white-black-front.jpg",
+        "/imagenes/angels-white-black-side.jpg"
+      ]
+    },
+    {
+      "nuevo": false,
+      "agotado": true,
+      "marca": "New Era",
+      "modelo": "NY Yankees World Series 2000 Brown",
+      "precio": 1200,
+      "imagenes": [
+        "/imagenes/ny-brown.jpg"
+      ]
+    },
+    {
+      "nuevo": false,
+      "agotado": false,
+      "marca": "Rude",
+      "modelo": "Triple Crystals Black",
+      "precio": 1400,
+      "imagenes": [
+        "/imagenes/triple-crystals-front.jpg",
+        "/imagenes/triple-crystals-side.jpg",
+        "/imagenes/triple-crystals-back.jpg"
+      ]
+    },
+    {
+      "nuevo": false,
+      "agotado": false,
+      "marca": "31 Hats",
+      "modelo": "31 vs The World",
+      "precio": 1550,
+      "imagenes": [
+        "/imagenes/31-vs-world.jpg"
+      ]
+    },
+    {
+      "nuevo": false,
+      "agotado": false,
+      "marca": "Fino",
+      "modelo": "NY Japan",
+      "precio": 1450,
+      "imagenes": [
+        "/imagenes/ny-japan-front.jpg",
+        "/imagenes/ny-japan-side1.jpg",
+        "/imagenes/ny-japan-side2.jpg"
+      ]
+    },
+    {
+      "nuevo": false,
+      "agotado": false,
+      "marca": "Banditz",
+      "modelo": "Banditz x Tapia “Los Ángeles”",
+      "precio": 1200,
+      "imagenes": [
+        "/imagenes/banditz-la-front.jpg",
+        "/imagenes/banditz-la-side1.jpg",
+        "/imagenes/banditz-la-side2.jpg",
+        "/imagenes/banditz-la-back.jpg"
+      ]
+    },
+    {
+      "nuevo": false,
+      "agotado": false,
+      "marca": "Dandy Hats",
+      "modelo": "Dandy 10th Anniversary",
+      "precio": 1700,
+      "imagenes": [
+        "/imagenes/dandy-10th.jpg"
+      ]
+    },
+    {
+      "nuevo": false,
+      "agotado": false,
+      "marca": "Fino",
+      "modelo": "Backpack Boyz Black Cherry Gelato",
+      "precio": 1500,
+      "imagen": "/imagenes/bb-cherry-front.jpg",
+      "imagenes": [
+        "/imagenes/bb-cherry-front.jpg",
+        "/imagenes/bb-cherry-side.jpg"
+      ]
+    },
+    {
+      "nuevo": false,
+      "agotado": false,
+      "marca": "Fino",
+      "modelo": "La Spider",
+      "precio": 1400,
+      "imagen": "/imagenes/la-spider.jpg",
+      "imagenes": [
+        "/imagenes/la-spider.jpg"
+      ]
+    },
+    {
+      "nuevo": false,
+      "agotado": false,
+      "marca": "Fino",
+      "modelo": "Tokyo Racing",
+      "precio": 1400,
+      "imagen": "/imagenes/tokyo-racing.jpg",
+      "imagenes": [
+        "/imagenes/tokyo-racing.jpg"
+      ]
+    },
+    {
+      "nuevo": false,
+      "agotado": false,
+      "marca": "31 Hats",
+      "modelo": "31hats x Backpackboyz \"La Mochila\"",
+      "precio": 1600,
+      "imagen": "/imagenes/mochila-red.jpg",
+      "imagenes": [
+        "/imagenes/mochila-red.jpg"
+      ]
+    },
+    {
+      "nuevo": false,
+      "agotado": false,
+      "marca": "31 Hats",
+      "modelo": "Take Notes 31 Vamp",
+      "precio": 1600,
+      "imagen": "/imagenes/thirtyone-vamp-new.jpg",
+      "imagenes": [
+        "/imagenes/thirtyone-vamp-new.jpg"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+backend:
+  name: git-gateway
+  branch: main # Asumiendo que tu rama principal en GitHub se llama "main"
+  publish_mode: editorial_workflow
+
+media_folder: "imagenes"
+public_folder: "/imagenes"
+
+collections:
+  - name: "catalogo"
+    label: "Catálogo de Gorras"
+    files:
+      - label: "Inventario"
+        name: "inventario"
+        file: "catalogo.json" # El archivo único donde se guardará todo
+        description: "Agrega, modifica o elimina gorras de Legacy Cap Store"
+        fields:
+          - label: "Lista de Gorras"
+            name: "gorras"
+            widget: "list" 
+            fields:
+              - {label: "Marca", name: "marca", widget: "string"}
+              - {label: "Modelo", name: "modelo", widget: "string"}
+              - {label: "Precio", name: "precio", widget: "number", value_type: "float"}
+              - label: "Fotos de la Gorra"
+                name: "imagenes"
+                widget: "list"
+                summary: "{{fields.foto}}"
+                field: {label: "Subir Foto", name: "foto", widget: "image"}
+              - {label: "¿Es producto nuevo?", name: "nuevo", widget: "boolean", default: true, required: false}
+              - {label: "¿Está agotado?", name: "agotado", widget: "boolean", default: false, required: false}
