@@ -6,11 +6,21 @@ media_folder: "imagenes"
 public_folder: "/imagenes"
 
 collections:
-  - name: "test"
-    label: "Test"
+  - name: "catalogo"
+    label: "Inventario de Gorras"
     files:
-      - label: "Test File"
-        name: "test"
-        file: "test.json"
+      - label: "Gorras"
+        name: "gorras"
+        file: "catalogo.json"
         fields:
-          - {label: "Titulo", name: "title", widget: "string"}
+          - label: "Lista de Gorras"
+            name: "gorras"
+            widget: "list"
+            summary: "{{fields.marca}} - {{fields.modelo}} | ${{fields.precio}}"
+            fields:
+              - {label: "Marca", name: "marca", widget: "string"}
+              - {label: "Modelo", name: "modelo", widget: "string"}
+              - {label: "Precio", name: "precio", widget: "number"}
+              - {label: "Foto", name: "foto", widget: "image"}
+              - {label: "Nuevo", name: "nuevo", widget: "boolean", required: false}
+              - {label: "Agotado", name: "agotado", widget: "boolean", required: false}
