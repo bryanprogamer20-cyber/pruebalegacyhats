@@ -1,12 +1,104 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Panel de Administración - Legacy Cap Store</title>
-    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
-  </head>
-  <body>
-    <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
-  </body>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>Legacy Cap Store | Panel de Inventario</title>
+
+<!-- Netlify Identity -->
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+
+<!-- Decap CMS -->
+<script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+
+<!-- Tipografía moderna -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+
+/* ---------- ESTILO GENERAL ---------- */
+
+body{
+font-family: 'Inter', system-ui, sans-serif !important;
+background:#f6f7f9 !important;
+}
+
+/* ---------- HEADER ---------- */
+
+.nc-app-header{
+background:#111 !important;
+border-bottom:none !important;
+}
+
+.nc-app-header-logo{
+filter:invert(1);
+}
+
+/* ---------- SIDEBAR ---------- */
+
+.nc-app-sidebar{
+background:white !important;
+border-right:1px solid #e5e7eb !important;
+}
+
+.nc-app-sidebar-link{
+font-weight:500 !important;
+}
+
+.nc-app-sidebar-link-active{
+background:#111 !important;
+color:white !important;
+border-left:4px solid #6366f1 !important;
+}
+
+/* ---------- TARJETAS ---------- */
+
+.nc-collection-page-list-card{
+border-radius:12px !important;
+border:1px solid #e5e7eb !important;
+transition:all .2s ease;
+}
+
+.nc-collection-page-list-card:hover{
+box-shadow:0 10px 25px rgba(0,0,0,0.08) !important;
+}
+
+/* ---------- BOTONES ---------- */
+
+button{
+border-radius:8px !important;
+}
+
+/* ---------- INPUTS ---------- */
+
+input, textarea{
+border-radius:8px !important;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<script>
+
+/* ---------- LOGIN AUTOMÁTICO ---------- */
+
+if (window.netlifyIdentity) {
+
+  window.netlifyIdentity.on("init", user => {
+    if (!user) {
+      window.netlifyIdentity.on("login", () => {
+        document.location.href = "/admin/";
+      });
+    }
+  });
+
+}
+
+</script>
+
+</body>
 </html>
