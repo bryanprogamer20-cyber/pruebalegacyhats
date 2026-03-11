@@ -1,6 +1,7 @@
 backend:
   name: git-gateway
   branch: main
+  publish_mode: editorial_workflow
 
 media_folder: "imagenes"
 public_folder: "/imagenes"
@@ -9,18 +10,48 @@ collections:
   - name: "catalogo"
     label: "Inventario de Gorras"
     files:
-      - label: "Gorras"
-        name: "gorras"
+      - label: "Inventario"
+        name: "inventario"
         file: "catalogo.json"
+        description: "Administración del inventario de Legacy Cap Store"
+
         fields:
           - label: "Lista de Gorras"
             name: "gorras"
             widget: "list"
-            summary: "{{fields.marca}} - {{fields.modelo}} | ${{fields.precio}}"
+
+            summary: "{{fields.marca}} {{fields.modelo}} | ${{fields.precio}}"
+
             fields:
-              - {label: "Marca", name: "marca", widget: "string"}
-              - {label: "Modelo", name: "modelo", widget: "string"}
-              - {label: "Precio", name: "precio", widget: "number"}
-              - {label: "Foto", name: "foto", widget: "image"}
-              - {label: "Nuevo", name: "nuevo", widget: "boolean", required: false}
-              - {label: "Agotado", name: "agotado", widget: "boolean", required: false}
+              - label: "Marca"
+                name: "marca"
+                widget: "string"
+
+              - label: "Modelo"
+                name: "modelo"
+                widget: "string"
+
+              - label: "Precio"
+                name: "precio"
+                widget: "number"
+                value_type: "float"
+
+              - label: "Fotos de la Gorra"
+                name: "imagenes"
+                widget: "list"
+                field:
+                  label: "Subir Foto"
+                  name: "foto"
+                  widget: "image"
+
+              - label: "Producto Nuevo"
+                name: "nuevo"
+                widget: "boolean"
+                required: false
+                default: false
+
+              - label: "Producto Agotado"
+                name: "agotado"
+                widget: "boolean"
+                required: false
+                default: false
