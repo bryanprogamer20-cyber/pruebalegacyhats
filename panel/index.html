@@ -1,170 +1,133 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>Legacy Cap Store | Panel</title>
-
-<style>
-
-body{
-font-family: Arial, Helvetica, sans-serif;
-background:#f4f6f8;
-margin:0;
-}
-
-header{
-background:#111;
-color:white;
-padding:20px;
-font-size:22px;
-font-weight:bold;
-}
-
-.container{
-padding:30px;
-}
-
-.grid{
-display:grid;
-grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
-gap:20px;
-}
-
-.card{
-background:white;
-border-radius:10px;
-padding:15px;
-box-shadow:0 5px 15px rgba(0,0,0,0.08);
-}
-
-.card img{
-width:100%;
-border-radius:6px;
-}
-
-.price{
-font-weight:bold;
-margin-top:5px;
-}
-
-.tag{
-display:inline-block;
-padding:4px 8px;
-border-radius:5px;
-font-size:12px;
-margin-top:5px;
-}
-
-.new{
-background:#2ecc71;
-color:white;
-}
-
-.sold{
-background:#e74c3c;
-color:white;
-}
-
-.actions{
-margin-bottom:25px;
-}
-
-button{
-background:#111;
-color:white;
-border:none;
-padding:10px 15px;
-border-radius:6px;
-cursor:pointer;
-}
-
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legacy Cap Store | Control Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #050505; color: #e5e5e5; font-family: 'Inter', sans-serif; }
+        .card { background: #111; border: 1px solid #222; border-radius: 12px; }
+        .input-style { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 10px; width: 100%; color: white; }
+        .input-style:focus { border-color: #3b82f6; outline: none; }
+    </style>
 </head>
+<body class="p-4 md:p-10">
+    <div class="max-w-5xl mx-auto">
+        <header class="flex justify-between items-center mb-10">
+            <h1 class="text-2xl font-bold tracking-widest uppercase italic text-white">Legacy <span class="text-blue-600">Panel</span></h1>
+            <span class="bg-blue-900/30 text-blue-400 text-xs px-3 py-1 rounded-full border border-blue-800">Firestore Activo</span>
+        </header>
 
-<body>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="md:col-span-1 card p-6 h-fit">
+                <h2 class="text-lg font-semibold mb-6">Nueva Mercancía</h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-xs text-gray-500 uppercase font-bold">Marca</label>
+                        <input type="text" id="marca" placeholder="New Era" class="input-style mt-1">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 uppercase font-bold">Modelo</label>
+                        <input type="text" id="modelo" placeholder="59Fifty Oakland" class="input-style mt-1">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 uppercase font-bold">Precio</label>
+                        <input type="number" id="precio" placeholder="1250" class="input-style mt-1">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 uppercase font-bold">Imagen</label>
+                        <input type="file" id="fotoFile" class="mt-1 text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer w-full">
+                    </div>
+                    <button onclick="subirGorra()" id="btnPublicar" class="w-full bg-white text-black font-bold py-3 rounded-lg hover:bg-blue-600 hover:text-white transition-all duration-300 mt-4">
+                        PUBLICAR GORRA
+                    </button>
+                </div>
+            </div>
 
-<header>
-Legacy Cap Store Admin
-</header>
+            <div class="md:col-span-2">
+                <h2 class="text-lg font-semibold mb-6 italic">Inventario Reciente</h2>
+                <div id="listaGorras" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <p class="text-gray-600 italic">Cargando bodega...</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<div class="container">
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-<div class="actions">
-<button onclick="location.href='/admin'">Editar inventario</button>
-</div>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAsf68-7toj9JWHLWsa_4vydh64E-DpGRM",
+            authDomain: "legacy-cap-store.firebaseapp.com",
+            projectId: "legacy-cap-store",
+            storageBucket: "legacy-cap-store.firebasestorage.app",
+            messagingSenderId: "691149990442",
+            appId: "1:691149990442:web:34759b3009d4e0c93a7153"
+        };
 
-<div class="grid" id="grid"></div>
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
 
-<button onclick="guardarCambios()">Guardar cambios</button>
+        // FUNCIÓN PARA PUBLICAR
+        window.subirGorra = async () => {
+            const btn = document.getElementById('btnPublicar');
+            const file = document.getElementById('fotoFile').files[0];
+            const marca = document.getElementById('marca').value;
+            const modelo = document.getElementById('modelo').value;
+            const precio = document.getElementById('precio').value;
 
-</div>
+            if(!file || !marca || !modelo || !precio) return alert("Llena todos los campos");
 
-<script>
+            btn.disabled = true;
+            btn.innerText = "SUBIENDO...";
 
-fetch("/catalogo.json")
-.then(res=>res.json())
-.then(data=>{
+            try {
+                // 1. Subir imagen a Storage
+                const storageRef = ref(storage, 'gorras/' + file.name);
+                await uploadBytes(storageRef, file);
+                const url = await getDownloadURL(storageRef);
 
-const grid=document.getElementById("grid")
+                // 2. Guardar datos en Firestore
+                await addDoc(collection(db, "gorras"), {
+                    marca, modelo, precio, url, fecha: new Date()
+                });
 
-data.gorras.forEach(gorra=>{
+                alert("¡Gorra en línea!");
+                document.getElementById('marca').value = "";
+                document.getElementById('modelo').value = "";
+                document.getElementById('precio').value = "";
+            } catch (e) {
+                alert("Error: " + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "PUBLICAR GORRA";
+            }
+        };
 
-let img = gorra.imagenes?.[0]?.foto || ""
-
-grid.innerHTML+=`
-
-<div class="card">
-
-<img src="${img}">
-
-<input class="marca" value="${gorra.marca}">
-<input class="modelo" value="${gorra.modelo}">
-<input class="precio" value="${gorra.precio}">
-
-<label>
-<input type="checkbox" class="nuevo" ${gorra.nuevo ? "checked":""}>
-Nuevo
-</label>
-
-<label>
-<input type="checkbox" class="agotado" ${gorra.agotado ? "checked":""}>
-Agotado
-</label>
-
-</div>
-
-`
-
-})
-
-})
-
-function guardarCambios(){
-
-let gorras=[]
-
-document.querySelectorAll(".card").forEach(card=>{
-
-let gorra={
-marca:card.querySelector(".marca").value,
-modelo:card.querySelector(".modelo").value,
-precio:parseFloat(card.querySelector(".precio").value),
-nuevo:card.querySelector(".nuevo").checked,
-agotado:card.querySelector(".agotado").checked
-}
-
-gorras.push(gorra)
-
-})
-
-localStorage.setItem("inventarioEditado",JSON.stringify(gorras))
-
-alert("Cambios listos para publicar")
-
-location.href="/admin"
-
-}
-</script>
-
+        // LEER INVENTARIO EN TIEMPO REAL
+        const q = query(collection(db, "gorras"), orderBy("fecha", "desc"));
+        onSnapshot(q, (snapshot) => {
+            const container = document.getElementById('listaGorras');
+            container.innerHTML = "";
+            snapshot.forEach((doc) => {
+                const item = doc.data();
+                container.innerHTML += `
+                    <div class="card p-4 flex gap-4 items-center">
+                        <img src="${item.url}" class="w-16 h-16 object-cover rounded shadow-lg">
+                        <div>
+                            <p class="text-[10px] text-blue-500 font-bold uppercase">${item.marca}</p>
+                            <p class="font-bold text-sm">${item.modelo}</p>
+                            <p class="text-green-400 text-sm">$${item.precio}</p>
+                        </div>
+                    </div>
+                `;
+            });
+        });
+    </script>
 </body>
 </html>
