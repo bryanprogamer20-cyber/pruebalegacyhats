@@ -1,7 +1,7 @@
 backend:
-  name: git-gateway
+  name: github
+  repo: bryanprogamer20-cyber/pruebalegacyhats
   branch: main
-  publish_mode: editorial_workflow
 
 media_folder: "imagenes"
 public_folder: "/imagenes"
