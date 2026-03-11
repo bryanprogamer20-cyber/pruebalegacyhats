@@ -95,6 +95,8 @@ Legacy Cap Store Admin
 
 <div class="grid" id="grid"></div>
 
+<button onclick="guardarCambios()">Guardar cambios</button>
+
 </div>
 
 <script>
@@ -109,31 +111,25 @@ data.gorras.forEach(gorra=>{
 
 let img = gorra.imagenes?.[0]?.foto || ""
 
-let tags=""
-
-if(gorra.nuevo){
-tags+=`<span class="tag new">Nuevo</span>`
-}
-
-if(gorra.agotado){
-tags+=`<span class="tag sold">Agotado</span>`
-}
-
 grid.innerHTML+=`
 
 <div class="card">
 
 <img src="${img}">
 
-<h3>${gorra.marca} ${gorra.modelo}</h3>
+<input class="marca" value="${gorra.marca}">
+<input class="modelo" value="${gorra.modelo}">
+<input class="precio" value="${gorra.precio}">
 
-<div class="price">$${gorra.precio}</div>
+<label>
+<input type="checkbox" class="nuevo" ${gorra.nuevo ? "checked":""}>
+Nuevo
+</label>
 
-${tags}
-
-<br><br>
-
-<button onclick="editar()">Editar</button>
+<label>
+<input type="checkbox" class="agotado" ${gorra.agotado ? "checked":""}>
+Agotado
+</label>
 
 </div>
 
@@ -142,8 +138,31 @@ ${tags}
 })
 
 })
-function editar(){
-location.href="/admin/#/collections/catalogo/entries/inventario"
+
+function guardarCambios(){
+
+let gorras=[]
+
+document.querySelectorAll(".card").forEach(card=>{
+
+let gorra={
+marca:card.querySelector(".marca").value,
+modelo:card.querySelector(".modelo").value,
+precio:parseFloat(card.querySelector(".precio").value),
+nuevo:card.querySelector(".nuevo").checked,
+agotado:card.querySelector(".agotado").checked
+}
+
+gorras.push(gorra)
+
+})
+
+localStorage.setItem("inventarioEditado",JSON.stringify(gorras))
+
+alert("Cambios listos para publicar")
+
+location.href="/admin"
+
 }
 </script>
 
