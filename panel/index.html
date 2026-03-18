@@ -100,8 +100,9 @@
                     </div>
 
                     <div>
-                        <label class="text-xs text-gray-500 uppercase font-bold">Imagen Principal</label>
-                        <input type="file" id="fotoFile" class="mt-1 text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer w-full">
+                        <label class="text-xs text-gray-500 uppercase font-bold">Imágenes (Selecciona varias)</label>
+                        <input type="file" id="fotoFile" multiple accept="image/*" class="mt-1 text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer w-full">
+                        <p class="text-[10px] text-gray-500 mt-1">Puedes elegir 2 o más fotos para activar el carrusel.</p>
                     </div>
                     <button onclick="subirGorra()" id="btnPublicar" class="w-full bg-white text-black font-bold py-3 rounded-lg hover:bg-blue-600 hover:text-white transition-all duration-300 mt-4">
                         PUBLICAR GORRA
@@ -175,43 +176,52 @@
 
         window.cerrarSesion = () => auth.signOut();
 
-        // --- SUBIR MERCANCÍA ---
+        // --- SUBIR MERCANCÍA CON MÚLTIPLES FOTOS ---
         window.subirGorra = async () => {
             const btn = document.getElementById('btnPublicar');
-            const file = document.getElementById('fotoFile').files[0];
+            const files = document.getElementById('fotoFile').files; // Ahora es una lista de archivos
             const marca = document.getElementById('marca').value;
             const modelo = document.getElementById('modelo').value;
             const precio = document.getElementById('precio').value;
             const isNuevo = document.getElementById('checkNuevo').checked;
             const isAgotado = document.getElementById('checkAgotado').checked;
 
-            if(!file || !marca || !modelo || !precio) return alert("Llena todos los campos");
+            if(files.length === 0 || !marca || !modelo || !precio) return alert("Llena todos los campos y elige al menos 1 foto");
 
             btn.disabled = true;
-            btn.innerText = "SUBIENDO...";
+            btn.innerText = "SUBIENDO FOTOS...";
 
             try {
-                const storageRef = storage.ref('gorras/' + file.name);
-                await storageRef.put(file);
-                const url = await storageRef.getDownloadURL();
+                // Mapeamos cada archivo a una promesa de subida
+                const uploadPromises = Array.from(files).map(async (file) => {
+                    // Le agregamos la fecha al nombre para que no se sobreescriban si se llaman igual
+                    const storageRef = storage.ref('gorras/' + Date.now() + '_' + file.name);
+                    await storageRef.put(file);
+                    return await storageRef.getDownloadURL();
+                });
 
+                // Esperamos a que TODAS las fotos se suban y obtenemos sus links
+                const urlsArray = await Promise.all(uploadPromises);
+
+                // Guardamos en la base de datos
                 await db.collection("gorras").add({
                     marca, 
                     modelo, 
                     precio: Number(precio), 
-                    url, 
+                    urls: urlsArray, // Guardamos la lista de links
+                    url: urlsArray[0], // Guardamos la principal por compatibilidad
                     nuevo: isNuevo,
                     agotado: isAgotado,
                     fecha: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
-                alert("¡Gorra publicada!");
+                alert("¡Gorra publicada con éxito!");
                 document.getElementById('marca').value = "";
                 document.getElementById('modelo').value = "";
                 document.getElementById('precio').value = "";
                 document.getElementById('fotoFile').value = "";
                 document.getElementById('checkAgotado').checked = false;
-                document.getElementById('checkNuevo').checked = true; // Reiniciar a nuevo
+                document.getElementById('checkNuevo').checked = true;
             } catch (e) {
                 alert("Error: " + e.message);
             } finally {
@@ -234,12 +244,14 @@
                     const opacityClass = item.agotado ? 'opacity-50 grayscale' : '';
                     const lineThroughClass = item.agotado ? 'line-through text-gray-500' : 'text-white';
                     const tagAgotado = item.agotado ? `<span class="bg-red-900/50 text-red-400 text-[10px] px-2 py-0.5 rounded border border-red-800 ml-2">Agotado</span>` : '';
-                    // NUEVO: Etiqueta visual para "Nuevo" en el panel
                     const tagNuevo = item.nuevo && !item.agotado ? `<span class="bg-blue-900/50 text-blue-400 text-[10px] px-2 py-0.5 rounded border border-blue-800 ml-2">Nuevo</span>` : '';
+                    
+                    // Elegimos la imagen a mostrar (soporta el formato viejo y el nuevo)
+                    const displayImage = item.urls && item.urls.length > 0 ? item.urls[0] : item.url;
 
                     container.innerHTML += `
                         <div class="card p-4 flex gap-4 items-center relative group transition-all hover:bg-gray-900">
-                            <img src="${item.url}" class="w-16 h-16 object-cover rounded shadow-lg ${opacityClass}">
+                            <img src="${displayImage}" class="w-16 h-16 object-cover rounded shadow-lg ${opacityClass}">
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center flex-wrap gap-y-1">
                                     <p class="text-[10px] text-gray-400 font-bold uppercase">${item.marca}</p>
@@ -277,17 +289,12 @@
             document.getElementById('editMarca').value = data.marca;
             document.getElementById('editModelo').value = data.modelo;
             document.getElementById('editPrecio').value = data.precio;
-            
-            // Cargar los estados actuales en el modal
-            document.getElementById('editNuevo').checked = data.nuevo !== false; // Si no existe el campo, asume que es nuevo por defecto
+            document.getElementById('editNuevo').checked = data.nuevo !== false; 
             document.getElementById('editAgotado').checked = data.agotado || false;
-            
             document.getElementById('editModal').classList.remove('hidden');
         };
 
-        window.cerrarModal = () => {
-            document.getElementById('editModal').classList.add('hidden');
-        };
+        window.cerrarModal = () => document.getElementById('editModal').classList.add('hidden');
 
         window.guardarEdicion = async () => {
             const id = document.getElementById('editId').value;
