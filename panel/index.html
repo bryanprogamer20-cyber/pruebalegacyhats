@@ -276,10 +276,39 @@
             });
         }
 
+        // --- FUNCIONES DE EDICIÓN Y ELIMINACIÓN ---
         window.eliminarGorra = async (id) => {
-            if(confirm("¿Estás seguro de que quieres eliminar esta gorra?")) {
-                try { await db.collection("gorras").doc(id).delete(); } 
-                catch(e) { alert("Error: " + e.message); }
+            if(confirm("¿Estás seguro de que quieres eliminar esta gorra? Sus fotos también se borrarán de la base de datos.")) {
+                try { 
+                    // 1. Obtenemos la información de la gorra antes de borrarla
+                    const gorraRef = db.collection("gorras").doc(id);
+                    const doc = await gorraRef.get();
+                    
+                    if (doc.exists) {
+                        const data = doc.data();
+                        
+                        // 2. Identificamos qué fotos tiene (la lista nueva o la foto vieja)
+                        let fotosABorrar = [];
+                        if (data.urls && data.urls.length > 0) {
+                            fotosABorrar = data.urls;
+                        } else if (data.url) {
+                            fotosABorrar = [data.url];
+                        }
+
+                        // 3. Borramos cada foto directamente del Storage
+                        for (const linkFoto of fotosABorrar) {
+                            try {
+                                await storage.refFromURL(linkFoto).delete();
+                            } catch (errorImagen) {
+                                console.log("Una imagen ya no existía en Storage:", errorImagen);
+                            }
+                        }
+
+                        // 4. Finalmente, borramos el texto de la base de datos
+                        await gorraRef.delete(); 
+                    }
+                } 
+                catch(e) { alert("Error al eliminar: " + e.message); }
             }
         };
 
