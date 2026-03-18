@@ -13,7 +13,7 @@
         .hidden { display: none !important; }
     </style>
 </head>
-<body class="p-4 md:p-10 min-h-screen flex flex-col items-center justify-center">
+<body class="p-4 md:p-10 min-h-screen flex flex-col items-center justify-center relative">
 
     <div id="loginSection" class="w-full max-w-md card p-8 shadow-2xl">
         <div class="w-16 h-16 bg-blue-600 text-white flex items-center justify-center rounded-xl mx-auto mb-6 text-3xl font-bold font-stencil">L</div>
@@ -27,7 +27,40 @@
         </div>
     </div>
 
-    <div id="panelSection" class="w-full max-w-5xl mx-auto hidden">
+    <div id="editModal" class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 hidden backdrop-blur-sm">
+        <div class="card p-8 w-full max-w-md shadow-2xl border border-blue-500/30">
+            <h2 class="text-xl font-bold mb-6 text-blue-400 italic uppercase">Editar Información</h2>
+            <input type="hidden" id="editId">
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs text-gray-500 uppercase font-bold">Marca</label>
+                    <input type="text" id="editMarca" class="input-style">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 uppercase font-bold">Modelo</label>
+                    <input type="text" id="editModelo" class="input-style">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-500 uppercase font-bold">Precio ($)</label>
+                    <input type="number" id="editPrecio" class="input-style">
+                </div>
+                
+                <div class="pt-2 pb-2 border-y border-gray-800">
+                    <label class="flex items-center text-sm font-bold text-gray-300 cursor-pointer">
+                        <input type="checkbox" id="editAgotado" class="mr-3 w-5 h-5 accent-blue-600"> 
+                        MARCAR COMO AGOTADO
+                    </label>
+                </div>
+
+                <div class="flex gap-4 mt-8">
+                    <button onclick="cerrarModal()" class="flex-1 bg-transparent border border-gray-600 text-white font-bold py-3 rounded-lg hover:bg-gray-800 transition-all">Cancelar</button>
+                    <button onclick="guardarEdicion()" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-all">Actualizar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="panelSection" class="w-full max-w-6xl mx-auto hidden">
         <header class="flex justify-between items-center mb-10 w-full">
             <h1 class="text-2xl font-bold tracking-widest uppercase italic text-white">Legacy <span class="text-blue-600">Panel</span></h1>
             <div class="flex gap-4 items-center">
@@ -36,8 +69,8 @@
             </div>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
-            <div class="md:col-span-1 card p-6 h-fit">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
+            <div class="lg:col-span-1 card p-6 h-fit sticky top-6">
                 <h2 class="text-lg font-semibold mb-6">Nueva Mercancía</h2>
                 <div class="space-y-4">
                     <div>
@@ -52,8 +85,18 @@
                         <label class="text-xs text-gray-500 uppercase font-bold">Precio ($)</label>
                         <input type="number" id="precio" placeholder="1250" class="input-style mt-1">
                     </div>
+                    
+                    <div class="flex flex-col gap-3 py-3 border-y border-gray-800 mt-2">
+                        <label class="flex items-center text-sm font-bold text-gray-300 cursor-pointer">
+                            <input type="checkbox" id="checkNuevo" checked class="mr-3 w-4 h-4 accent-blue-600"> Etiqueta "NUEVO"
+                        </label>
+                        <label class="flex items-center text-sm font-bold text-gray-300 cursor-pointer">
+                            <input type="checkbox" id="checkAgotado" class="mr-3 w-4 h-4 accent-blue-600"> Iniciar como "AGOTADO"
+                        </label>
+                    </div>
+
                     <div>
-                        <label class="text-xs text-gray-500 uppercase font-bold">Imagen</label>
+                        <label class="text-xs text-gray-500 uppercase font-bold">Imagen Principal</label>
                         <input type="file" id="fotoFile" class="mt-1 text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer w-full">
                     </div>
                     <button onclick="subirGorra()" id="btnPublicar" class="w-full bg-white text-black font-bold py-3 rounded-lg hover:bg-blue-600 hover:text-white transition-all duration-300 mt-4">
@@ -62,7 +105,7 @@
                 </div>
             </div>
 
-            <div class="md:col-span-2">
+            <div class="lg:col-span-2">
                 <h2 class="text-lg font-semibold mb-6 italic">Inventario Reciente</h2>
                 <div id="listaGorras" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <p class="text-gray-600 italic">Cargando bodega...</p>
@@ -74,8 +117,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script> <script>
-        // Tus llaves de conexión
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+    <script>
         const firebaseConfig = {
             apiKey: "AIzaSyAsf68-7toj9JWHLWsa_4vydh64E-DpGRM",
             authDomain: "legacy-cap-store.firebaseapp.com",
@@ -85,29 +129,27 @@
             appId: "1:691149990442:web:34759b3009d4e0c93a7153"
         };
 
-        // Inicializar
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.firestore();
         const storage = firebase.storage();
         const auth = firebase.auth();
 
-        // --- LÓGICA DE SEGURIDAD (LOGIN / LOGOUT) ---
-        
-        // Escuchar si hay alguien conectado
+        // Almacén temporal de datos para la edición
+        window.gorrasData = {};
+
+        // --- AUTENTICACIÓN ---
         auth.onAuthStateChanged((user) => {
             const loginSec = document.getElementById('loginSection');
             const panelSec = document.getElementById('panelSection');
             const body = document.querySelector('body');
 
             if (user) {
-                // Si la llave es correcta, mostrar panel
                 loginSec.classList.add('hidden');
                 panelSec.classList.remove('hidden');
                 body.classList.remove('items-center', 'justify-center');
                 body.classList.add('items-start');
-                cargarInventario(); // Solo carga los datos si está logueado
+                cargarInventario(); 
             } else {
-                // Si no, mostrar login
                 loginSec.classList.remove('hidden');
                 panelSec.classList.add('hidden');
                 body.classList.add('items-center', 'justify-center');
@@ -115,7 +157,6 @@
             }
         });
 
-        // Función para el botón Entrar
         window.iniciarSesion = () => {
             const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
@@ -127,24 +168,24 @@
             auth.signInWithEmailAndPassword(email, pass)
                 .then(() => { btn.innerText = "ENTRAR AL PANEL"; })
                 .catch((error) => {
-                    alert("Acceso denegado. Verifica correo y contraseña.");
+                    alert("Acceso denegado.");
                     btn.innerText = "ENTRAR AL PANEL";
                 });
         };
 
-        // Función para el botón Cerrar Sesión
-        window.cerrarSesion = () => {
-            auth.signOut();
-        };
+        window.cerrarSesion = () => auth.signOut();
 
-        // --- LÓGICA DEL INVENTARIO ---
-
+        // --- SUBIR MERCANCÍA ---
         window.subirGorra = async () => {
             const btn = document.getElementById('btnPublicar');
             const file = document.getElementById('fotoFile').files[0];
             const marca = document.getElementById('marca').value;
             const modelo = document.getElementById('modelo').value;
             const precio = document.getElementById('precio').value;
+            
+            // Leer estado de los checkboxes
+            const isNuevo = document.getElementById('checkNuevo').checked;
+            const isAgotado = document.getElementById('checkAgotado').checked;
 
             if(!file || !marca || !modelo || !precio) return alert("Llena todos los campos");
 
@@ -157,7 +198,13 @@
                 const url = await storageRef.getDownloadURL();
 
                 await db.collection("gorras").add({
-                    marca, modelo, precio: Number(precio), url, fecha: firebase.firestore.FieldValue.serverTimestamp()
+                    marca, 
+                    modelo, 
+                    precio: Number(precio), 
+                    url, 
+                    nuevo: isNuevo,
+                    agotado: isAgotado,
+                    fecha: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
                 alert("¡Gorra publicada!");
@@ -165,6 +212,7 @@
                 document.getElementById('modelo').value = "";
                 document.getElementById('precio').value = "";
                 document.getElementById('fotoFile').value = "";
+                document.getElementById('checkAgotado').checked = false;
             } catch (e) {
                 alert("Error: " + e.message);
             } finally {
@@ -173,25 +221,93 @@
             }
         };
 
+        // --- LEER Y MOSTRAR INVENTARIO (CON BOTONES DE EDITAR/ELIMINAR) ---
         function cargarInventario() {
             db.collection("gorras").orderBy("fecha", "desc").onSnapshot((snapshot) => {
                 const container = document.getElementById('listaGorras');
                 container.innerHTML = "";
+                window.gorrasData = {}; // Limpiamos el caché local
+                
                 snapshot.forEach((doc) => {
                     const item = doc.data();
+                    window.gorrasData[doc.id] = item; // Guardamos los datos para usarlos en el modal
+                    
+                    // Condicionales visuales para el panel
+                    const opacityClass = item.agotado ? 'opacity-50 grayscale' : '';
+                    const lineThroughClass = item.agotado ? 'line-through text-gray-500' : 'text-white';
+                    const tagAgotado = item.agotado ? `<span class="bg-red-900/50 text-red-400 text-[10px] px-2 py-0.5 rounded border border-red-800 ml-2">Agotado</span>` : '';
+
                     container.innerHTML += `
-                        <div class="card p-4 flex gap-4 items-center relative group">
-                            <img src="${item.url}" class="w-16 h-16 object-cover rounded shadow-lg">
-                            <div>
-                                <p class="text-[10px] text-blue-500 font-bold uppercase">${item.marca}</p>
-                                <p class="font-bold text-sm truncate w-32">${item.modelo}</p>
+                        <div class="card p-4 flex gap-4 items-center relative group transition-all hover:bg-gray-900">
+                            <img src="${item.url}" class="w-16 h-16 object-cover rounded shadow-lg ${opacityClass}">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center">
+                                    <p class="text-[10px] text-blue-500 font-bold uppercase">${item.marca}</p>
+                                    ${tagAgotado}
+                                </div>
+                                <p class="font-bold text-sm truncate ${lineThroughClass}">${item.modelo}</p>
                                 <p class="text-green-400 text-sm">$${item.precio}</p>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <button onclick="abrirModal('${doc.id}')" title="Editar" class="bg-blue-900/30 text-blue-400 p-2 rounded hover:bg-blue-600 hover:text-white transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                </button>
+                                <button onclick="eliminarGorra('${doc.id}')" title="Eliminar" class="bg-red-900/30 text-red-400 p-2 rounded hover:bg-red-600 hover:text-white transition-colors">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
                             </div>
                         </div>
                     `;
                 });
             });
         }
+
+        // --- FUNCIONES DE EDICIÓN Y ELIMINACIÓN ---
+        window.eliminarGorra = async (id) => {
+            if(confirm("¿Estás seguro de que quieres eliminar esta gorra? Esta acción no se puede deshacer.")) {
+                try {
+                    await db.collection("gorras").doc(id).delete();
+                } catch(e) { alert("Error al eliminar: " + e.message); }
+            }
+        };
+
+        window.abrirModal = (id) => {
+            const data = window.gorrasData[id];
+            // Llenar la ventana flotante con los datos actuales
+            document.getElementById('editId').value = id;
+            document.getElementById('editMarca').value = data.marca;
+            document.getElementById('editModelo').value = data.modelo;
+            document.getElementById('editPrecio').value = data.precio;
+            document.getElementById('editAgotado').checked = data.agotado || false;
+            
+            // Mostrar la ventana
+            document.getElementById('editModal').classList.remove('hidden');
+        };
+
+        window.cerrarModal = () => {
+            document.getElementById('editModal').classList.add('hidden');
+        };
+
+        window.guardarEdicion = async () => {
+            const id = document.getElementById('editId').value;
+            const marca = document.getElementById('editMarca').value;
+            const modelo = document.getElementById('editModelo').value;
+            const precio = document.getElementById('editPrecio').value;
+            const isAgotado = document.getElementById('editAgotado').checked;
+
+            try {
+                // Solo actualizamos los campos de texto y estados (no tocamos la imagen ni la fecha)
+                await db.collection("gorras").doc(id).update({
+                    marca: marca,
+                    modelo: modelo,
+                    precio: Number(precio),
+                    agotado: isAgotado
+                });
+                cerrarModal();
+            } catch(e) { 
+                alert("Error al actualizar: " + e.message); 
+            }
+        };
     </script>
 </body>
 </html>
