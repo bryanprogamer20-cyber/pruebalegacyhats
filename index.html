@@ -128,7 +128,7 @@
                             price: data.precio || 0,
                             category: data.marca || 'Otros',
                             images: [data.url], 
-                            isNew: true, 
+                            isNew: data.nuevo !== false, 
                             isSoldOut: data.agotado || false
                         };
                     });

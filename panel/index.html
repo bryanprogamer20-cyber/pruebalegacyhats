@@ -45,9 +45,13 @@
                     <input type="number" id="editPrecio" class="input-style">
                 </div>
                 
-                <div class="pt-2 pb-2 border-y border-gray-800">
+                <div class="pt-4 pb-2 border-y border-gray-800 flex flex-col gap-3">
                     <label class="flex items-center text-sm font-bold text-gray-300 cursor-pointer">
-                        <input type="checkbox" id="editAgotado" class="mr-3 w-5 h-5 accent-blue-600"> 
+                        <input type="checkbox" id="editNuevo" class="mr-3 w-5 h-5 accent-blue-600"> 
+                        MANTENER ETIQUETA "NUEVO"
+                    </label>
+                    <label class="flex items-center text-sm font-bold text-gray-300 cursor-pointer">
+                        <input type="checkbox" id="editAgotado" class="mr-3 w-5 h-5 accent-red-600"> 
                         MARCAR COMO AGOTADO
                     </label>
                 </div>
@@ -91,7 +95,7 @@
                             <input type="checkbox" id="checkNuevo" checked class="mr-3 w-4 h-4 accent-blue-600"> Etiqueta "NUEVO"
                         </label>
                         <label class="flex items-center text-sm font-bold text-gray-300 cursor-pointer">
-                            <input type="checkbox" id="checkAgotado" class="mr-3 w-4 h-4 accent-blue-600"> Iniciar como "AGOTADO"
+                            <input type="checkbox" id="checkAgotado" class="mr-3 w-4 h-4 accent-red-600"> Iniciar como "AGOTADO"
                         </label>
                     </div>
 
@@ -133,8 +137,6 @@
         const db = firebase.firestore();
         const storage = firebase.storage();
         const auth = firebase.auth();
-
-        // Almacén temporal de datos para la edición
         window.gorrasData = {};
 
         // --- AUTENTICACIÓN ---
@@ -161,9 +163,7 @@
             const email = document.getElementById('email').value;
             const pass = document.getElementById('password').value;
             const btn = document.getElementById('btnLogin');
-            
             if(!email || !pass) return alert("Ingresa tus credenciales.");
-            
             btn.innerText = "VERIFICANDO...";
             auth.signInWithEmailAndPassword(email, pass)
                 .then(() => { btn.innerText = "ENTRAR AL PANEL"; })
@@ -182,8 +182,6 @@
             const marca = document.getElementById('marca').value;
             const modelo = document.getElementById('modelo').value;
             const precio = document.getElementById('precio').value;
-            
-            // Leer estado de los checkboxes
             const isNuevo = document.getElementById('checkNuevo').checked;
             const isAgotado = document.getElementById('checkAgotado').checked;
 
@@ -213,6 +211,7 @@
                 document.getElementById('precio').value = "";
                 document.getElementById('fotoFile').value = "";
                 document.getElementById('checkAgotado').checked = false;
+                document.getElementById('checkNuevo').checked = true; // Reiniciar a nuevo
             } catch (e) {
                 alert("Error: " + e.message);
             } finally {
@@ -221,28 +220,30 @@
             }
         };
 
-        // --- LEER Y MOSTRAR INVENTARIO (CON BOTONES DE EDITAR/ELIMINAR) ---
+        // --- LEER Y MOSTRAR INVENTARIO ---
         function cargarInventario() {
             db.collection("gorras").orderBy("fecha", "desc").onSnapshot((snapshot) => {
                 const container = document.getElementById('listaGorras');
                 container.innerHTML = "";
-                window.gorrasData = {}; // Limpiamos el caché local
+                window.gorrasData = {}; 
                 
                 snapshot.forEach((doc) => {
                     const item = doc.data();
-                    window.gorrasData[doc.id] = item; // Guardamos los datos para usarlos en el modal
+                    window.gorrasData[doc.id] = item; 
                     
-                    // Condicionales visuales para el panel
                     const opacityClass = item.agotado ? 'opacity-50 grayscale' : '';
                     const lineThroughClass = item.agotado ? 'line-through text-gray-500' : 'text-white';
                     const tagAgotado = item.agotado ? `<span class="bg-red-900/50 text-red-400 text-[10px] px-2 py-0.5 rounded border border-red-800 ml-2">Agotado</span>` : '';
+                    // NUEVO: Etiqueta visual para "Nuevo" en el panel
+                    const tagNuevo = item.nuevo && !item.agotado ? `<span class="bg-blue-900/50 text-blue-400 text-[10px] px-2 py-0.5 rounded border border-blue-800 ml-2">Nuevo</span>` : '';
 
                     container.innerHTML += `
                         <div class="card p-4 flex gap-4 items-center relative group transition-all hover:bg-gray-900">
                             <img src="${item.url}" class="w-16 h-16 object-cover rounded shadow-lg ${opacityClass}">
                             <div class="flex-1 min-w-0">
-                                <div class="flex items-center">
-                                    <p class="text-[10px] text-blue-500 font-bold uppercase">${item.marca}</p>
+                                <div class="flex items-center flex-wrap gap-y-1">
+                                    <p class="text-[10px] text-gray-400 font-bold uppercase">${item.marca}</p>
+                                    ${tagNuevo}
                                     ${tagAgotado}
                                 </div>
                                 <p class="font-bold text-sm truncate ${lineThroughClass}">${item.modelo}</p>
@@ -264,23 +265,23 @@
 
         // --- FUNCIONES DE EDICIÓN Y ELIMINACIÓN ---
         window.eliminarGorra = async (id) => {
-            if(confirm("¿Estás seguro de que quieres eliminar esta gorra? Esta acción no se puede deshacer.")) {
-                try {
-                    await db.collection("gorras").doc(id).delete();
-                } catch(e) { alert("Error al eliminar: " + e.message); }
+            if(confirm("¿Estás seguro de que quieres eliminar esta gorra?")) {
+                try { await db.collection("gorras").doc(id).delete(); } 
+                catch(e) { alert("Error: " + e.message); }
             }
         };
 
         window.abrirModal = (id) => {
             const data = window.gorrasData[id];
-            // Llenar la ventana flotante con los datos actuales
             document.getElementById('editId').value = id;
             document.getElementById('editMarca').value = data.marca;
             document.getElementById('editModelo').value = data.modelo;
             document.getElementById('editPrecio').value = data.precio;
+            
+            // Cargar los estados actuales en el modal
+            document.getElementById('editNuevo').checked = data.nuevo !== false; // Si no existe el campo, asume que es nuevo por defecto
             document.getElementById('editAgotado').checked = data.agotado || false;
             
-            // Mostrar la ventana
             document.getElementById('editModal').classList.remove('hidden');
         };
 
@@ -293,14 +294,15 @@
             const marca = document.getElementById('editMarca').value;
             const modelo = document.getElementById('editModelo').value;
             const precio = document.getElementById('editPrecio').value;
+            const isNuevo = document.getElementById('editNuevo').checked;
             const isAgotado = document.getElementById('editAgotado').checked;
 
             try {
-                // Solo actualizamos los campos de texto y estados (no tocamos la imagen ni la fecha)
                 await db.collection("gorras").doc(id).update({
                     marca: marca,
                     modelo: modelo,
                     precio: Number(precio),
+                    nuevo: isNuevo,
                     agotado: isAgotado
                 });
                 cerrarModal();
