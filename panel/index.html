@@ -16,7 +16,7 @@
 <body class="p-4 md:p-10 min-h-screen flex flex-col items-center justify-center relative">
 
     <div id="loginSection" class="w-full max-w-md card p-8 shadow-2xl">
-        <div class="w-16 h-16 bg-blue-600 text-white flex items-center justify-center rounded-xl mx-auto mb-6 text-3xl font-bold font-stencil">L</div>
+        <div class="w-16 h-16 bg-blue-600 text-white flex items-center justify-center rounded-xl mx-auto mb-6 text-3xl font-bold font-stencil" style="font-family: 'Impact', sans-serif; letter-spacing: 0.05em;">L</div>
         <h2 class="text-2xl font-bold mb-6 text-center italic uppercase tracking-widest">Acceso Restringido</h2>
         <div class="space-y-4">
             <input type="email" id="email" placeholder="Correo de Administrador" class="input-style">
@@ -59,7 +59,7 @@
                 <div class="pt-2 pb-2 border-b border-gray-800">
                     <label class="text-xs text-gray-500 uppercase font-bold">Reemplazar Imágenes (Opcional)</label>
                     <input type="file" id="editFotoFile" multiple accept="image/*" class="mt-1 text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer w-full">
-                    <p class="text-[10px] text-gray-500 mt-1">Sube nuevas fotos para borrar las anteriores. Déjalo en blanco para conservarlas.</p>
+                    <p class="text-[10px] text-gray-500 mt-1">Sube nuevas fotos para borrar las anteriores. Déjalo vacío para conservarlas.</p>
                 </div>
 
                 <div class="flex gap-4 mt-8">
@@ -146,7 +146,7 @@
         const auth = firebase.auth();
         window.gorrasData = {};
 
-        // --- AUTENTICACIÓN ---
+        // --- AUTH ---
         auth.onAuthStateChanged((user) => {
             const loginSec = document.getElementById('loginSection');
             const panelSec = document.getElementById('panelSection');
@@ -182,7 +182,7 @@
 
         window.cerrarSesion = () => auth.signOut();
 
-        // --- SUBIR MERCANCÍA CON MÚLTIPLES FOTOS ---
+        // --- SUBIR MERCANCÍA ---
         window.subirGorra = async () => {
             const btn = document.getElementById('btnPublicar');
             const files = document.getElementById('fotoFile').files;
@@ -232,7 +232,7 @@
             }
         };
 
-        // --- LEER Y MOSTRAR INVENTARIO ---
+        // --- CARGAR INVENTARIO ---
         function cargarInventario() {
             db.collection("gorras").orderBy("fecha", "desc").onSnapshot((snapshot) => {
                 const container = document.getElementById('listaGorras');
@@ -247,7 +247,6 @@
                     const lineThroughClass = item.agotado ? 'line-through text-gray-500' : 'text-white';
                     const tagAgotado = item.agotado ? `<span class="bg-red-900/50 text-red-400 text-[10px] px-2 py-0.5 rounded border border-red-800 ml-2">Agotado</span>` : '';
                     const tagNuevo = item.nuevo && !item.agotado ? `<span class="bg-blue-900/50 text-blue-400 text-[10px] px-2 py-0.5 rounded border border-blue-800 ml-2">Nuevo</span>` : '';
-                    
                     const displayImage = item.urls && item.urls.length > 0 ? item.urls[0] : item.url;
 
                     container.innerHTML += `
@@ -276,37 +275,35 @@
             });
         }
 
-        // --- FUNCIONES DE EDICIÓN Y ELIMINACIÓN ---
+        // --- ELIMINAR GORRA Y SUS FOTOS DE LA BASE DE DATOS ---
         window.eliminarGorra = async (id) => {
-            if(confirm("¿Estás seguro de que quieres eliminar esta gorra? Sus fotos también se borrarán de la base de datos.")) {
+            if(confirm("¿Estás seguro de que quieres eliminar esta gorra y TODAS sus fotos de la base de datos?")) {
                 try { 
-                    // 1. Obtenemos la información de la gorra antes de borrarla
-                    const gorraRef = db.collection("gorras").doc(id);
-                    const doc = await gorraRef.get();
-                    
-                    if (doc.exists) {
-                        const data = doc.data();
-                        
-                        // 2. Identificamos qué fotos tiene (la lista nueva o la foto vieja)
-                        let fotosABorrar = [];
-                        if (data.urls && data.urls.length > 0) {
-                            fotosABorrar = data.urls;
-                        } else if (data.url) {
-                            fotosABorrar = [data.url];
-                        }
+                    const data = window.gorrasData[id];
+                    if (!data) return;
 
-                        // 3. Borramos cada foto directamente del Storage
-                        for (const linkFoto of fotosABorrar) {
+                    // 1. Identificamos qué fotos tiene esta gorra
+                    let fotosABorrar = [];
+                    if (data.urls && data.urls.length > 0) {
+                        fotosABorrar = data.urls;
+                    } else if (data.url) {
+                        fotosABorrar = [data.url];
+                    }
+
+                    // 2. Borramos cada foto directamente del Storage de Google
+                    for (let linkFoto of fotosABorrar) {
+                        if (linkFoto && linkFoto.includes("firebasestorage")) {
                             try {
                                 await storage.refFromURL(linkFoto).delete();
                             } catch (errorImagen) {
-                                console.log("Una imagen ya no existía en Storage:", errorImagen);
+                                console.log("La imagen ya no existía en la base de datos", errorImagen);
                             }
                         }
-
-                        // 4. Finalmente, borramos el texto de la base de datos
-                        await gorraRef.delete(); 
                     }
+
+                    // 3. Borramos el texto del inventario
+                    await db.collection("gorras").doc(id).delete(); 
+                    alert("Gorra y fotos eliminadas por completo del sistema.");
                 } 
                 catch(e) { alert("Error al eliminar: " + e.message); }
             }
@@ -320,13 +317,13 @@
             document.getElementById('editPrecio').value = data.precio;
             document.getElementById('editNuevo').checked = data.nuevo !== false; 
             document.getElementById('editAgotado').checked = data.agotado || false;
-            document.getElementById('editFotoFile').value = ""; // Limpiamos el input de fotos por si acaso
+            document.getElementById('editFotoFile').value = ""; 
             document.getElementById('editModal').classList.remove('hidden');
         };
 
         window.cerrarModal = () => document.getElementById('editModal').classList.add('hidden');
 
-        // --- ACTUALIZAR DATOS E IMÁGENES ---
+        // --- GUARDAR EDICIÓN (Y BORRAR FOTOS VIEJAS SI SE REEMPLAZAN) ---
         window.guardarEdicion = async () => {
             const id = document.getElementById('editId').value;
             const marca = document.getElementById('editMarca').value;
@@ -334,7 +331,7 @@
             const precio = document.getElementById('editPrecio').value;
             const isNuevo = document.getElementById('editNuevo').checked;
             const isAgotado = document.getElementById('editAgotado').checked;
-            const files = document.getElementById('editFotoFile').files; // Archivos nuevos
+            const files = document.getElementById('editFotoFile').files; 
 
             const btnActualizar = document.querySelector('#editModal button:last-child');
             const originalText = btnActualizar.innerText;
@@ -350,9 +347,9 @@
                     agotado: isAgotado
                 };
 
-                // Si subes fotos nuevas en el modal, reemplazamos las viejas
                 if (files.length > 0) {
-                    btnActualizar.innerText = "SUBIENDO FOTOS...";
+                    btnActualizar.innerText = "SUBIENDO FOTOS NUEVAS...";
+                    
                     const uploadPromises = Array.from(files).map(async (file) => {
                         const storageRef = storage.ref('gorras/' + Date.now() + '_' + file.name);
                         await storageRef.put(file);
@@ -362,6 +359,19 @@
                     const urlsArray = await Promise.all(uploadPromises);
                     updateData.urls = urlsArray;
                     updateData.url = urlsArray[0];
+
+                    btnActualizar.innerText = "LIMPIANDO FOTOS VIEJAS...";
+                    const dataAntigua = window.gorrasData[id];
+                    let fotosViejas = [];
+                    if (dataAntigua.urls && dataAntigua.urls.length > 0) fotosViejas = dataAntigua.urls;
+                    else if (dataAntigua.url) fotosViejas = [dataAntigua.url];
+
+                    for (let linkFoto of fotosViejas) {
+                        if (linkFoto && linkFoto.includes("firebasestorage")) {
+                            try { await storage.refFromURL(linkFoto).delete(); } 
+                            catch(e) { console.log("Error limpiando foto vieja."); }
+                        }
+                    }
                 }
 
                 await db.collection("gorras").doc(id).update(updateData);
