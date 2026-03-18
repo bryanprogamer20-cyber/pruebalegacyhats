@@ -3,26 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Legacy Cap Store | Control Panel</title>
+    <title>Legacy Cap Store | Login Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #050505; color: #e5e5e5; font-family: 'Inter', sans-serif; }
         .card { background: #111; border: 1px solid #222; border-radius: 12px; }
         .input-style { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 10px; width: 100%; color: white; }
         .input-style:focus { border-color: #3b82f6; outline: none; }
+        .hidden { display: none !important; }
     </style>
 </head>
-<body class="p-4 md:p-10">
-    <div class="max-w-5xl mx-auto">
-        <header class="flex justify-between items-center mb-10">
+<body class="p-4 md:p-10 min-h-screen flex flex-col items-center justify-center">
+
+    <div id="loginSection" class="w-full max-w-md card p-8 shadow-2xl">
+        <div class="w-16 h-16 bg-blue-600 text-white flex items-center justify-center rounded-xl mx-auto mb-6 text-3xl font-bold font-stencil">L</div>
+        <h2 class="text-2xl font-bold mb-6 text-center italic uppercase tracking-widest">Acceso Restringido</h2>
+        <div class="space-y-4">
+            <input type="email" id="email" placeholder="Correo de Administrador" class="input-style">
+            <input type="password" id="password" placeholder="Contraseña" class="input-style">
+            <button onclick="iniciarSesion()" id="btnLogin" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-all duration-300">
+                ENTRAR AL PANEL
+            </button>
+        </div>
+    </div>
+
+    <div id="panelSection" class="w-full max-w-5xl mx-auto hidden">
+        <header class="flex justify-between items-center mb-10 w-full">
             <h1 class="text-2xl font-bold tracking-widest uppercase italic text-white">Legacy <span class="text-blue-600">Panel</span></h1>
-            <span class="bg-blue-900/30 text-blue-400 text-xs px-3 py-1 rounded-full border border-blue-800">Firestore Activo</span>
+            <div class="flex gap-4 items-center">
+                <span class="bg-green-900/30 text-green-400 text-xs px-3 py-1 rounded-full border border-green-800">Conectado</span>
+                <button onclick="cerrarSesion()" class="text-sm text-red-500 hover:text-red-400 underline decoration-red-500/30">Cerrar Sesión</button>
+            </div>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
             <div class="md:col-span-1 card p-6 h-fit">
                 <h2 class="text-lg font-semibold mb-6">Nueva Mercancía</h2>
-                
                 <div class="space-y-4">
                     <div>
                         <label class="text-xs text-gray-500 uppercase font-bold">Marca</label>
@@ -33,7 +49,7 @@
                         <input type="text" id="modelo" placeholder="59Fifty Oakland" class="input-style mt-1">
                     </div>
                     <div>
-                        <label class="text-xs text-gray-500 uppercase font-bold">Precio</label>
+                        <label class="text-xs text-gray-500 uppercase font-bold">Precio ($)</label>
                         <input type="number" id="precio" placeholder="1250" class="input-style mt-1">
                     </div>
                     <div>
@@ -55,11 +71,11 @@
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
-
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script> <script>
+        // Tus llaves de conexión
         const firebaseConfig = {
             apiKey: "AIzaSyAsf68-7toj9JWHLWsa_4vydh64E-DpGRM",
             authDomain: "legacy-cap-store.firebaseapp.com",
@@ -69,11 +85,60 @@
             appId: "1:691149990442:web:34759b3009d4e0c93a7153"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
+        // Inicializar
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+        const auth = firebase.auth();
 
-        // FUNCIÓN PARA PUBLICAR
+        // --- LÓGICA DE SEGURIDAD (LOGIN / LOGOUT) ---
+        
+        // Escuchar si hay alguien conectado
+        auth.onAuthStateChanged((user) => {
+            const loginSec = document.getElementById('loginSection');
+            const panelSec = document.getElementById('panelSection');
+            const body = document.querySelector('body');
+
+            if (user) {
+                // Si la llave es correcta, mostrar panel
+                loginSec.classList.add('hidden');
+                panelSec.classList.remove('hidden');
+                body.classList.remove('items-center', 'justify-center');
+                body.classList.add('items-start');
+                cargarInventario(); // Solo carga los datos si está logueado
+            } else {
+                // Si no, mostrar login
+                loginSec.classList.remove('hidden');
+                panelSec.classList.add('hidden');
+                body.classList.add('items-center', 'justify-center');
+                body.classList.remove('items-start');
+            }
+        });
+
+        // Función para el botón Entrar
+        window.iniciarSesion = () => {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            const btn = document.getElementById('btnLogin');
+            
+            if(!email || !pass) return alert("Ingresa tus credenciales.");
+            
+            btn.innerText = "VERIFICANDO...";
+            auth.signInWithEmailAndPassword(email, pass)
+                .then(() => { btn.innerText = "ENTRAR AL PANEL"; })
+                .catch((error) => {
+                    alert("Acceso denegado. Verifica correo y contraseña.");
+                    btn.innerText = "ENTRAR AL PANEL";
+                });
+        };
+
+        // Función para el botón Cerrar Sesión
+        window.cerrarSesion = () => {
+            auth.signOut();
+        };
+
+        // --- LÓGICA DEL INVENTARIO ---
+
         window.subirGorra = async () => {
             const btn = document.getElementById('btnPublicar');
             const file = document.getElementById('fotoFile').files[0];
@@ -87,20 +152,19 @@
             btn.innerText = "SUBIENDO...";
 
             try {
-                // 1. Subir imagen a Storage
-                const storageRef = ref(storage, 'gorras/' + file.name);
-                await uploadBytes(storageRef, file);
-                const url = await getDownloadURL(storageRef);
+                const storageRef = storage.ref('gorras/' + file.name);
+                await storageRef.put(file);
+                const url = await storageRef.getDownloadURL();
 
-                // 2. Guardar datos en Firestore
-                await addDoc(collection(db, "gorras"), {
-                    marca, modelo, precio, url, fecha: new Date()
+                await db.collection("gorras").add({
+                    marca, modelo, precio: Number(precio), url, fecha: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
-                alert("¡Gorra en línea!");
+                alert("¡Gorra publicada!");
                 document.getElementById('marca').value = "";
                 document.getElementById('modelo').value = "";
                 document.getElementById('precio').value = "";
+                document.getElementById('fotoFile').value = "";
             } catch (e) {
                 alert("Error: " + e.message);
             } finally {
@@ -109,25 +173,25 @@
             }
         };
 
-        // LEER INVENTARIO EN TIEMPO REAL
-        const q = query(collection(db, "gorras"), orderBy("fecha", "desc"));
-        onSnapshot(q, (snapshot) => {
-            const container = document.getElementById('listaGorras');
-            container.innerHTML = "";
-            snapshot.forEach((doc) => {
-                const item = doc.data();
-                container.innerHTML += `
-                    <div class="card p-4 flex gap-4 items-center">
-                        <img src="${item.url}" class="w-16 h-16 object-cover rounded shadow-lg">
-                        <div>
-                            <p class="text-[10px] text-blue-500 font-bold uppercase">${item.marca}</p>
-                            <p class="font-bold text-sm">${item.modelo}</p>
-                            <p class="text-green-400 text-sm">$${item.precio}</p>
+        function cargarInventario() {
+            db.collection("gorras").orderBy("fecha", "desc").onSnapshot((snapshot) => {
+                const container = document.getElementById('listaGorras');
+                container.innerHTML = "";
+                snapshot.forEach((doc) => {
+                    const item = doc.data();
+                    container.innerHTML += `
+                        <div class="card p-4 flex gap-4 items-center relative group">
+                            <img src="${item.url}" class="w-16 h-16 object-cover rounded shadow-lg">
+                            <div>
+                                <p class="text-[10px] text-blue-500 font-bold uppercase">${item.marca}</p>
+                                <p class="font-bold text-sm truncate w-32">${item.modelo}</p>
+                                <p class="text-green-400 text-sm">$${item.precio}</p>
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                });
             });
-        });
+        }
     </script>
 </body>
 </html>
