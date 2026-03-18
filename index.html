@@ -64,11 +64,14 @@
         const MusicNote = (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>;
         const SortAsc = (props) => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="M11 4h10"/><path d="M11 8h7"/><path d="M11 12h4"/></svg>;
 
+        // --- Componente Tarjeta de Producto con Carrusel ---
         const ProductCard = ({ product }) => {
+            const [currentImageIndex, setCurrentImageIndex] = useState(0); // El motor del carrusel
             const [isHovered, setIsHovered] = useState(false);
             const [isVisible, setIsVisible] = useState(false);
             const cardRef = useRef(null);
 
+            // Animación al hacer scroll
             useEffect(() => {
                 const observer = new IntersectionObserver(
                     (entries) => {
@@ -85,17 +88,55 @@
                 return () => { if (cardRef.current) observer.unobserve(cardRef.current); };
             }, []);
 
+            // Efecto Carrusel: Cambia la foto cada 1.2 segundos si el mouse está encima
+            useEffect(() => {
+                let interval;
+                if (isHovered && product.images && product.images.length > 1 && !product.isSoldOut) {
+                    interval = setInterval(() => {
+                        setCurrentImageIndex((prev) => (prev + 1) % product.images.length);
+                    }, 1200);
+                } else {
+                    setCurrentImageIndex(0); // Regresa a la foto principal si quitas el mouse
+                }
+                return () => clearInterval(interval);
+            }, [isHovered, product.images, product.isSoldOut]);
+
             return (
-                <div ref={cardRef} className={`group bg-white rounded-lg shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 relative fade-in-up ${isVisible ? 'is-visible' : ''}`} onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
+                <div 
+                    ref={cardRef}
+                    className={`group bg-white rounded-lg shadow-sm hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 relative fade-in-up ${isVisible ? 'is-visible' : ''}`}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
+                >
                     <div className="relative aspect-square overflow-hidden bg-gray-100">
                         {product.isSoldOut && (
                             <div className="absolute inset-0 bg-black/40 z-30 flex items-center justify-center backdrop-blur-[1px]">
-                                <span className="bg-black/90 text-white px-6 py-2 font-stencil text-2xl border-4 border-white/90 transform -rotate-12 tracking-widest shadow-xl">AGOTADO</span>
+                                <span className="bg-black/90 text-white px-6 py-2 font-stencil text-2xl border-4 border-white/90 transform -rotate-12 tracking-widest shadow-xl">
+                                    AGOTADO
+                                </span>
                             </div>
                         )}
-                        <img src={product.images && product.images.length > 0 ? product.images[0] : 'https://via.placeholder.com/500'} alt={product.name} className={`w-full h-full object-cover transition-transform duration-500 ${product.isSoldOut ? 'grayscale-[50%]' : 'grayscale group-hover:grayscale-0 group-hover:scale-110'}`} />
+                        
+                        {/* Indicadores (Puntitos) del carrusel */}
+                        {!product.isSoldOut && product.images && product.images.length > 1 && isHovered && (
+                            <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1 z-20">
+                                {product.images.map((_, idx) => (
+                                    <div key={idx} className={`w-1.5 h-1.5 rounded-full shadow-sm transition-all ${idx === currentImageIndex ? 'bg-white scale-125' : 'bg-white/50'}`} />
+                                ))}
+                            </div>
+                        )}
+
+                        {/* La Imagen */}
+                        <img 
+                            src={product.images && product.images.length > 0 ? product.images[currentImageIndex] : 'https://via.placeholder.com/500'} 
+                            alt={product.name} 
+                            className={`w-full h-full object-cover transition-transform duration-500 ${product.isSoldOut ? 'grayscale-[50%]' : 'grayscale group-hover:grayscale-0 group-hover:scale-110'}`} 
+                        />
+                        
                         {product.isNew && !product.isSoldOut && (
-                            <span className="absolute top-4 left-4 bg-white text-black border border-black text-xs font-bold px-3 py-1 z-10">NUEVO</span>
+                            <span className="absolute top-4 left-4 bg-white text-black border border-black text-xs font-bold px-3 py-1 z-10">
+                                NUEVO
+                            </span>
                         )}
                     </div>
                     <div className="p-6">

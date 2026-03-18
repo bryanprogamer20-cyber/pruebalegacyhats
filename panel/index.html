@@ -45,7 +45,7 @@
                     <input type="number" id="editPrecio" class="input-style">
                 </div>
                 
-                <div class="pt-4 pb-2 border-y border-gray-800 flex flex-col gap-3">
+                <div class="pt-4 pb-2 border-t border-gray-800 flex flex-col gap-3">
                     <label class="flex items-center text-sm font-bold text-gray-300 cursor-pointer">
                         <input type="checkbox" id="editNuevo" class="mr-3 w-5 h-5 accent-blue-600"> 
                         MANTENER ETIQUETA "NUEVO"
@@ -54,6 +54,12 @@
                         <input type="checkbox" id="editAgotado" class="mr-3 w-5 h-5 accent-red-600"> 
                         MARCAR COMO AGOTADO
                     </label>
+                </div>
+
+                <div class="pt-2 pb-2 border-b border-gray-800">
+                    <label class="text-xs text-gray-500 uppercase font-bold">Reemplazar Imágenes (Opcional)</label>
+                    <input type="file" id="editFotoFile" multiple accept="image/*" class="mt-1 text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer w-full">
+                    <p class="text-[10px] text-gray-500 mt-1">Sube nuevas fotos para borrar las anteriores. Déjalo en blanco para conservarlas.</p>
                 </div>
 
                 <div class="flex gap-4 mt-8">
@@ -179,7 +185,7 @@
         // --- SUBIR MERCANCÍA CON MÚLTIPLES FOTOS ---
         window.subirGorra = async () => {
             const btn = document.getElementById('btnPublicar');
-            const files = document.getElementById('fotoFile').files; // Ahora es una lista de archivos
+            const files = document.getElementById('fotoFile').files;
             const marca = document.getElementById('marca').value;
             const modelo = document.getElementById('modelo').value;
             const precio = document.getElementById('precio').value;
@@ -192,24 +198,20 @@
             btn.innerText = "SUBIENDO FOTOS...";
 
             try {
-                // Mapeamos cada archivo a una promesa de subida
                 const uploadPromises = Array.from(files).map(async (file) => {
-                    // Le agregamos la fecha al nombre para que no se sobreescriban si se llaman igual
                     const storageRef = storage.ref('gorras/' + Date.now() + '_' + file.name);
                     await storageRef.put(file);
                     return await storageRef.getDownloadURL();
                 });
 
-                // Esperamos a que TODAS las fotos se suban y obtenemos sus links
                 const urlsArray = await Promise.all(uploadPromises);
 
-                // Guardamos en la base de datos
                 await db.collection("gorras").add({
                     marca, 
                     modelo, 
                     precio: Number(precio), 
-                    urls: urlsArray, // Guardamos la lista de links
-                    url: urlsArray[0], // Guardamos la principal por compatibilidad
+                    urls: urlsArray, 
+                    url: urlsArray[0], 
                     nuevo: isNuevo,
                     agotado: isAgotado,
                     fecha: firebase.firestore.FieldValue.serverTimestamp()
@@ -246,7 +248,6 @@
                     const tagAgotado = item.agotado ? `<span class="bg-red-900/50 text-red-400 text-[10px] px-2 py-0.5 rounded border border-red-800 ml-2">Agotado</span>` : '';
                     const tagNuevo = item.nuevo && !item.agotado ? `<span class="bg-blue-900/50 text-blue-400 text-[10px] px-2 py-0.5 rounded border border-blue-800 ml-2">Nuevo</span>` : '';
                     
-                    // Elegimos la imagen a mostrar (soporta el formato viejo y el nuevo)
                     const displayImage = item.urls && item.urls.length > 0 ? item.urls[0] : item.url;
 
                     container.innerHTML += `
@@ -275,7 +276,6 @@
             });
         }
 
-        // --- FUNCIONES DE EDICIÓN Y ELIMINACIÓN ---
         window.eliminarGorra = async (id) => {
             if(confirm("¿Estás seguro de que quieres eliminar esta gorra?")) {
                 try { await db.collection("gorras").doc(id).delete(); } 
@@ -291,11 +291,13 @@
             document.getElementById('editPrecio').value = data.precio;
             document.getElementById('editNuevo').checked = data.nuevo !== false; 
             document.getElementById('editAgotado').checked = data.agotado || false;
+            document.getElementById('editFotoFile').value = ""; // Limpiamos el input de fotos por si acaso
             document.getElementById('editModal').classList.remove('hidden');
         };
 
         window.cerrarModal = () => document.getElementById('editModal').classList.add('hidden');
 
+        // --- ACTUALIZAR DATOS E IMÁGENES ---
         window.guardarEdicion = async () => {
             const id = document.getElementById('editId').value;
             const marca = document.getElementById('editMarca').value;
@@ -303,18 +305,43 @@
             const precio = document.getElementById('editPrecio').value;
             const isNuevo = document.getElementById('editNuevo').checked;
             const isAgotado = document.getElementById('editAgotado').checked;
+            const files = document.getElementById('editFotoFile').files; // Archivos nuevos
+
+            const btnActualizar = document.querySelector('#editModal button:last-child');
+            const originalText = btnActualizar.innerText;
+            btnActualizar.disabled = true;
+            btnActualizar.innerText = "ACTUALIZANDO...";
 
             try {
-                await db.collection("gorras").doc(id).update({
+                let updateData = {
                     marca: marca,
                     modelo: modelo,
                     precio: Number(precio),
                     nuevo: isNuevo,
                     agotado: isAgotado
-                });
+                };
+
+                // Si subes fotos nuevas en el modal, reemplazamos las viejas
+                if (files.length > 0) {
+                    btnActualizar.innerText = "SUBIENDO FOTOS...";
+                    const uploadPromises = Array.from(files).map(async (file) => {
+                        const storageRef = storage.ref('gorras/' + Date.now() + '_' + file.name);
+                        await storageRef.put(file);
+                        return await storageRef.getDownloadURL();
+                    });
+
+                    const urlsArray = await Promise.all(uploadPromises);
+                    updateData.urls = urlsArray;
+                    updateData.url = urlsArray[0];
+                }
+
+                await db.collection("gorras").doc(id).update(updateData);
                 cerrarModal();
             } catch(e) { 
                 alert("Error al actualizar: " + e.message); 
+            } finally {
+                btnActualizar.disabled = false;
+                btnActualizar.innerText = originalText;
             }
         };
     </script>
