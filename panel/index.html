@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Legacy Cap Store | Login Admin</title>
+    <title>Legacy Cap Store | Admin Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { background-color: #050505; color: #e5e5e5; font-family: 'Inter', sans-serif; }
@@ -15,16 +15,15 @@
 </head>
 <body class="p-4 md:p-10 min-h-screen flex flex-col items-center justify-center relative">
 
-    <div id="loginSection" class="w-full max-w-md card p-8 shadow-2xl">
-        <div class="w-16 h-16 bg-blue-600 text-white flex items-center justify-center rounded-xl mx-auto mb-6 text-3xl font-bold font-stencil" style="font-family: 'Impact', sans-serif; letter-spacing: 0.05em;">L</div>
-        <h2 class="text-2xl font-bold mb-6 text-center italic uppercase tracking-widest">Acceso Restringido</h2>
-        <div class="space-y-4">
-            <input type="email" id="email" placeholder="Correo de Administrador" class="input-style">
-            <input type="password" id="password" placeholder="Contraseña" class="input-style">
-            <button onclick="iniciarSesion()" id="btnLogin" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-all duration-300">
-                ENTRAR AL PANEL
-            </button>
-        </div>
+    <div id="loginSection" class="w-full max-w-md card p-10 shadow-2xl text-center">
+        <div class="w-20 h-20 bg-white text-black flex items-center justify-center rounded-2xl mx-auto mb-8 text-4xl font-black" style="font-family: 'Impact', sans-serif; letter-spacing: 0.05em;">L</div>
+        <h2 class="text-2xl font-bold mb-2 uppercase tracking-tighter italic">Panel de Control</h2>
+        <p class="text-gray-500 text-sm mb-8">Acceso exclusivo para administradores</p>
+        
+        <button onclick="loginConGoogle()" class="flex items-center justify-center gap-3 w-full bg-white text-black font-bold py-4 rounded-xl hover:bg-gray-200 transition-all active:scale-95 shadow-lg">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6" alt="Google">
+            ENTRAR CON GOOGLE
+        </button>
     </div>
 
     <div id="editModal" class="fixed inset-0 bg-black/90 flex items-center justify-center z-50 hidden backdrop-blur-sm">
@@ -74,7 +73,7 @@
         <header class="flex justify-between items-center mb-10 w-full">
             <h1 class="text-2xl font-bold tracking-widest uppercase italic text-white">Legacy <span class="text-blue-600">Panel</span></h1>
             <div class="flex gap-4 items-center">
-                <span class="bg-green-900/30 text-green-400 text-xs px-3 py-1 rounded-full border border-green-800">Conectado</span>
+                <span id="userName" class="text-xs text-gray-400"></span>
                 <button onclick="cerrarSesion()" class="text-sm text-red-500 hover:text-red-400 underline decoration-red-500/30">Cerrar Sesión</button>
             </div>
         </header>
@@ -146,18 +145,32 @@
         const auth = firebase.auth();
         window.gorrasData = {};
 
-        // --- AUTH ---
+        // --- LÓGICA DE LOGIN GOOGLE ---
+        window.loginConGoogle = () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider).catch((error) => {
+                alert("Error al entrar: " + error.message);
+            });
+        };
+
         auth.onAuthStateChanged((user) => {
             const loginSec = document.getElementById('loginSection');
             const panelSec = document.getElementById('panelSection');
             const body = document.querySelector('body');
 
             if (user) {
-                loginSec.classList.add('hidden');
-                panelSec.classList.remove('hidden');
-                body.classList.remove('items-center', 'justify-center');
-                body.classList.add('items-start');
-                cargarInventario(); 
+                // REEMPLAZA ESTE CORREO POR EL TUYO PARA QUE SOLO TÚ PUEDAS ENTRAR
+                if(user.email === "antoniofloreslaguna13@gmail.com") { 
+                    loginSec.classList.add('hidden');
+                    panelSec.classList.remove('hidden');
+                    body.classList.remove('items-center', 'justify-center');
+                    body.classList.add('items-start');
+                    document.getElementById('userName').innerText = user.displayName;
+                    cargarInventario();
+                } else {
+                    alert("Acceso denegado. No tienes permisos de administrador para Legacy Cap Store.");
+                    auth.signOut();
+                }
             } else {
                 loginSec.classList.remove('hidden');
                 panelSec.classList.add('hidden');
@@ -165,20 +178,6 @@
                 body.classList.remove('items-start');
             }
         });
-
-        window.iniciarSesion = () => {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('password').value;
-            const btn = document.getElementById('btnLogin');
-            if(!email || !pass) return alert("Ingresa tus credenciales.");
-            btn.innerText = "VERIFICANDO...";
-            auth.signInWithEmailAndPassword(email, pass)
-                .then(() => { btn.innerText = "ENTRAR AL PANEL"; })
-                .catch((error) => {
-                    alert("Acceso denegado.");
-                    btn.innerText = "ENTRAR AL PANEL";
-                });
-        };
 
         window.cerrarSesion = () => auth.signOut();
 
