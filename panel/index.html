@@ -159,7 +159,6 @@
             const body = document.querySelector('body');
 
             if (user) {
-                // REEMPLAZA ESTE CORREO POR EL TUYO PARA QUE SOLO TÚ PUEDAS ENTRAR
                 if(user.email === "antoniofloreslaguna13@gmail.com") { 
                     loginSec.classList.add('hidden');
                     panelSec.classList.remove('hidden');
@@ -181,7 +180,19 @@
 
         window.cerrarSesion = () => auth.signOut();
 
-        // --- SUBIR MERCANCÍA ---
+        // --- PUBLICAR BORRADOR EN LA TIENDA ---
+        window.publicarGorra = async (id) => {
+            try {
+                await db.collection("gorras").doc(id).update({
+                    publicado: true
+                });
+                // No ocupamos alert, Firebase actualizará la pantalla automáticamente
+            } catch (error) {
+                alert("Error al publicar: " + error.message);
+            }
+        };
+
+        // --- SUBIR MERCANCÍA DESDE EL PANEL ---
         window.subirGorra = async () => {
             const btn = document.getElementById('btnPublicar');
             const files = document.getElementById('fotoFile').files;
@@ -213,6 +224,7 @@
                     url: urlsArray[0], 
                     nuevo: isNuevo,
                     agotado: isAgotado,
+                    publicado: true, // Nace publicada automáticamente
                     fecha: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
@@ -242,67 +254,68 @@
                     const item = doc.data();
                     window.gorrasData[doc.id] = item; 
                     
+                    const isBorrador = item.publicado === false; // Detectamos si es borrador
                     const opacityClass = item.agotado ? 'opacity-50 grayscale' : '';
                     const lineThroughClass = item.agotado ? 'line-through text-gray-500' : 'text-white';
                     const tagAgotado = item.agotado ? `<span class="bg-red-900/50 text-red-400 text-[10px] px-2 py-0.5 rounded border border-red-800 ml-2">Agotado</span>` : '';
                     const tagNuevo = item.nuevo && !item.agotado ? `<span class="bg-blue-900/50 text-blue-400 text-[10px] px-2 py-0.5 rounded border border-blue-800 ml-2">Nuevo</span>` : '';
-                    const displayImage = item.urls && item.urls.length > 0 ? item.urls[0] : item.url;
+                    const tagBorrador = isBorrador ? `<span class="bg-yellow-900/50 text-yellow-400 text-[10px] px-2 py-0.5 rounded border border-yellow-500 ml-2 animate-pulse font-bold">BORRADOR</span>` : '';
+                    const displayImage = item.urls && item.urls.length > 0 ? item.urls[0] : (item.url || 'https://via.placeholder.com/150');
 
+                    // Dibujamos la tarjeta (con un diseño especial si es borrador)
                     container.innerHTML += `
-                        <div class="card p-4 flex gap-4 items-center relative group transition-all hover:bg-gray-900">
-                            <img src="${displayImage}" class="w-16 h-16 object-cover rounded shadow-lg ${opacityClass}">
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center flex-wrap gap-y-1">
-                                    <p class="text-[10px] text-gray-400 font-bold uppercase">${item.marca}</p>
-                                    ${tagNuevo}
-                                    ${tagAgotado}
+                        <div class="card p-4 flex flex-col gap-3 relative group transition-all hover:bg-gray-900 ${isBorrador ? 'border-yellow-600/50 bg-yellow-900/10' : ''}">
+                            <div class="flex gap-4 items-center">
+                                <img src="${displayImage}" class="w-16 h-16 object-cover rounded shadow-lg ${opacityClass}">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center flex-wrap gap-y-1">
+                                        <p class="text-[10px] text-gray-400 font-bold uppercase">${item.marca}</p>
+                                        ${tagNuevo}
+                                        ${tagAgotado}
+                                        ${tagBorrador}
+                                    </div>
+                                    <p class="font-bold text-sm truncate ${lineThroughClass}">${item.modelo}</p>
+                                    <p class="text-green-400 text-sm">$${item.precio}</p>
                                 </div>
-                                <p class="font-bold text-sm truncate ${lineThroughClass}">${item.modelo}</p>
-                                <p class="text-green-400 text-sm">$${item.precio}</p>
+                                <div class="flex flex-col gap-2">
+                                    <button onclick="abrirModal('${doc.id}')" title="Editar" class="bg-blue-900/30 text-blue-400 p-2 rounded hover:bg-blue-600 hover:text-white transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                    </button>
+                                    <button onclick="eliminarGorra('${doc.id}')" title="Eliminar" class="bg-red-900/30 text-red-400 p-2 rounded hover:bg-red-600 hover:text-white transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="flex flex-col gap-2">
-                                <button onclick="abrirModal('${doc.id}')" title="Editar" class="bg-blue-900/30 text-blue-400 p-2 rounded hover:bg-blue-600 hover:text-white transition-colors">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            ${isBorrador ? `
+                                <button onclick="publicarGorra('${doc.id}')" class="w-full bg-green-900/30 text-green-400 border border-green-800/50 py-2 rounded text-xs font-bold hover:bg-green-600 hover:text-white transition-all flex justify-center items-center gap-2 mt-1 shadow-lg">
+                                    🚀 PUBLICAR EN LA TIENDA
                                 </button>
-                                <button onclick="eliminarGorra('${doc.id}')" title="Eliminar" class="bg-red-900/30 text-red-400 p-2 rounded hover:bg-red-600 hover:text-white transition-colors">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                </button>
-                            </div>
+                            ` : ''}
                         </div>
                     `;
                 });
             });
         }
 
-        // --- ELIMINAR GORRA Y SUS FOTOS DE LA BASE DE DATOS ---
+        // --- ELIMINAR GORRA Y SUS FOTOS ---
         window.eliminarGorra = async (id) => {
             if(confirm("¿Estás seguro de que quieres eliminar esta gorra y TODAS sus fotos de la base de datos?")) {
                 try { 
                     const data = window.gorrasData[id];
                     if (!data) return;
 
-                    // 1. Identificamos qué fotos tiene esta gorra
                     let fotosABorrar = [];
-                    if (data.urls && data.urls.length > 0) {
-                        fotosABorrar = data.urls;
-                    } else if (data.url) {
-                        fotosABorrar = [data.url];
-                    }
+                    if (data.urls && data.urls.length > 0) fotosABorrar = data.urls;
+                    else if (data.url) fotosABorrar = [data.url];
 
-                    // 2. Borramos cada foto directamente del Storage de Google
                     for (let linkFoto of fotosABorrar) {
                         if (linkFoto && linkFoto.includes("firebasestorage")) {
-                            try {
-                                await storage.refFromURL(linkFoto).delete();
-                            } catch (errorImagen) {
-                                console.log("La imagen ya no existía en la base de datos", errorImagen);
-                            }
+                            try { await storage.refFromURL(linkFoto).delete(); } 
+                            catch (errorImagen) { console.log("La imagen ya no existía", errorImagen); }
                         }
                     }
 
-                    // 3. Borramos el texto del inventario
                     await db.collection("gorras").doc(id).delete(); 
-                    alert("Gorra y fotos eliminadas por completo del sistema.");
                 } 
                 catch(e) { alert("Error al eliminar: " + e.message); }
             }
@@ -322,7 +335,7 @@
 
         window.cerrarModal = () => document.getElementById('editModal').classList.add('hidden');
 
-        // --- GUARDAR EDICIÓN (Y BORRAR FOTOS VIEJAS SI SE REEMPLAZAN) ---
+        // --- GUARDAR EDICIÓN ---
         window.guardarEdicion = async () => {
             const id = document.getElementById('editId').value;
             const marca = document.getElementById('editMarca').value;
