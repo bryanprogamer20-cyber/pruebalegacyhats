@@ -160,30 +160,43 @@
 
             useEffect(() => {
                 const unsubscribe = db.collection("gorras").orderBy("fecha", "desc").onSnapshot((snapshot) => {
-                    const loadedProducts = snapshot.docs.map(doc => {
+                    
+                    const loadedProducts = []; // Creamos la lista vacía
+
+                    snapshot.docs.forEach(doc => {
                         const data = doc.data();
                         
-                        // Lógica para leer la lista de fotos nueva, o usar la vieja si solo hay una
-                        let listaDeFotos = [];
-                        if (data.urls && data.urls.length > 0) {
-                            listaDeFotos = data.urls;
-                        } else if (data.url) {
-                            listaDeFotos = [data.url];
-                        } else {
-                            listaDeFotos = ['https://via.placeholder.com/500'];
-                        }
+                        // ==========================================
+                        // EL CADENERO: El Filtro de Borradores
+                        // ==========================================
+                        if (data.publicado !== false) { 
+                            
+                            // Lógica para leer las fotos
+                            let listaDeFotos = [];
+                            if (data.urls && data.urls.length > 0) {
+                                listaDeFotos = data.urls;
+                            } else if (data.url) {
+                                listaDeFotos = [data.url];
+                            } else {
+                                listaDeFotos = ['https://via.placeholder.com/500'];
+                            }
 
-                        return {
-                            id: doc.id,
-                            name: data.modelo || 'Sin nombre',
-                            price: data.precio || 0,
-                            category: data.marca || 'Otros',
-                            images: listaDeFotos, // Pasamos la lista completa al carrusel
-                            isNew: data.nuevo !== false, 
-                            isSoldOut: data.agotado || false
-                        };
+                            // Si pasó el filtro, entra a la lista oficial
+                            loadedProducts.push({
+                                id: doc.id,
+                                name: data.modelo || 'Sin nombre',
+                                price: data.precio || 0,
+                                category: data.marca || 'Otros',
+                                images: listaDeFotos, 
+                                isNew: data.nuevo !== false, 
+                                isSoldOut: data.agotado || false
+                            });
+                        }
                     });
-                    setProducts(loadedProducts);
+
+                    // Le entregamos a la página SOLO las gorras autorizadas
+                    setProducts(loadedProducts); 
+                    
                 }, (error) => {
                     console.error("Error cargando inventario: ", error);
                 });
